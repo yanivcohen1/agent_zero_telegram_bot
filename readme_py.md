@@ -8,8 +8,10 @@ py -m pip install --upgrade pip
 py agent_zero_telegram_bot.py
 
 # bot RUN
-/a0/usr/workdir/agent_zero_telegram_bot.py.
+/a0/usr/workdir/telegram_bot/agent_zero_telegram_bot.py.
 docker cp .\agent_zero_telegram_bot.py agent-zero:/a0/usr/workdir/telegram_bot/
+docker exec -it agent-zero /bin/bash
+cd /a0/usr/workdir/telegram_bot/
 chmod +x run.sh
 ./run.sh
 ---
