@@ -6,3 +6,14 @@ py -m pip install --upgrade pip
 
 # run it with dev default
 py bot.py
+
+---
+
+## Bot Commands
+
+- `/help` - Show the help menu.
+- `/schedule <name> <seconds> <prompt>` - Schedule a recurring task.
+  - Example: `/schedule btc 600 Check the price of Bitcoin`
+- `/stopschedule [name]` - Stop a specific schedule by name, or all if no name is provided.
+- `/schedules` - List all currently running schedules.
+- `get pic <filename>` - Retrieve a saved photo.

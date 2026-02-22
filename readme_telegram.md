@@ -99,3 +99,20 @@ Pairing code: ZADX65W4
 
 Ask the bot owner to approve with:
 openclaw pairing approve telegram ZADX65W4
+
+---
+
+## Bot Commands
+
+The bot supports the following commands:
+
+- `/help` - Show the help menu with all available commands and features.
+- `/schedule <name> <seconds> <prompt>` - Schedule a recurring task.
+  - Example: `/schedule btc 600 Check the price of Bitcoin`
+- `/stopschedule [name]` - Stop a specific schedule by name, or all if no name is provided.
+- `/schedules` - List all currently running schedules.
+
+You can also:
+- Send any text message to chat with the bot.
+- Send a photo to save it (use the caption as the filename).
+- Type `get pic <filename>` to retrieve a saved photo.

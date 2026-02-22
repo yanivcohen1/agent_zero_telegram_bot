@@ -144,7 +144,7 @@ async def scheduled_job(context: ContextTypes.DEFAULT_TYPE):
     await process_agent_task(prompt, chat_id, context, is_scheduled=True)
 
 async def schedule_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Command to schedule a recurring task. Usage: /schedule <seconds> <prompt>"""
+    """Command to schedule a recurring task. Usage: /schedule <name> <seconds> <prompt>"""
     if update.message.from_user.id != MY_ID:
         await update.message.reply_text("⛔ Access Denied.")
         return
@@ -152,45 +152,82 @@ async def schedule_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logging.info(f"📜 COMMAND [Schedule] from {update.message.from_user.first_name}: {update.message.text}")
 
     try:
-        interval = int(context.args[0])
-        prompt = " ".join(context.args[1:])
+        name = context.args[0]
+        interval = int(context.args[1])
+        prompt = " ".join(context.args[2:])
         
         if not prompt:
-            await update.message.reply_text("Please provide a prompt. Usage: /schedule <seconds> <prompt>")
+            await update.message.reply_text("Please provide a prompt. Usage: /schedule <name> <seconds> <prompt>")
             return
             
         chat_id = update.message.chat_id
         
+        # Check if job with this name already exists
+        current_jobs = context.job_queue.get_jobs_by_name(name)
+        if current_jobs:
+            await update.message.reply_text(f"❌ A schedule named '{name}' already exists.")
+            return
+
         # Add job to queue
         context.job_queue.run_repeating(
             scheduled_job, 
             interval=interval, 
             first=5, # run first time after 5 seconds
-            data={'prompt': prompt, 'chat_id': chat_id},
-            name=f"{chat_id}_{prompt[:10]}"
+            data={'prompt': prompt, 'chat_id': chat_id, 'interval': interval},
+            name=name
         )
         
-        await update.message.reply_text(f"✅ Scheduled task added! Will run '{prompt}' every {interval} seconds.")
+        await update.message.reply_text(f"✅ Scheduled task '{name}' added! Will run '{prompt}' every {interval} seconds.")
         
     except (IndexError, ValueError):
-        await update.message.reply_text("Usage: /schedule <seconds> <prompt>")
+        await update.message.reply_text("Usage: /schedule <name> <seconds> <prompt>")
 
 async def stop_schedule_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Command to stop all scheduled tasks."""
+    """Command to stop scheduled tasks. Usage: /stopschedule [name]"""
     if update.message.from_user.id != MY_ID:
         return
     
-    logging.info(f"📜 COMMAND [StopSchedule] from {update.message.from_user.first_name}")
+    logging.info(f"📜 COMMAND [StopSchedule] from {update.message.from_user.first_name}: {update.message.text}")
+
+    if context.args:
+        name = context.args[0]
+        current_jobs = context.job_queue.get_jobs_by_name(name)
+        if not current_jobs:
+            await update.message.reply_text(f"❌ No scheduled task found with name '{name}'.")
+            return
+        for job in current_jobs:
+            job.schedule_removal()
+        await update.message.reply_text(f"✅ Scheduled task '{name}' stopped.")
+    else:
+        current_jobs = context.job_queue.jobs()
+        if not current_jobs:
+            await update.message.reply_text("No scheduled tasks running.")
+            return
+            
+        for job in current_jobs:
+            job.schedule_removal()
+            
+        await update.message.reply_text("✅ All scheduled tasks stopped.")
+
+async def schedules_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Command to list all scheduled tasks."""
+    if update.message.from_user.id != MY_ID:
+        return
+    
+    logging.info(f"📜 COMMAND [Schedules] from {update.message.from_user.first_name}")
 
     current_jobs = context.job_queue.jobs()
     if not current_jobs:
         await update.message.reply_text("No scheduled tasks running.")
         return
         
+    text = "📅 Running Schedules:\n"
     for job in current_jobs:
-        job.schedule_removal()
+        interval = job.data.get('interval', 'unknown')
+        prompt = job.data.get('prompt', 'unknown')
+        text += f"• {job.name} (every {interval}s): {prompt}\n"
         
-    await update.message.reply_text("✅ All scheduled tasks stopped.")
+    await update.message.reply_text(text)
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Command to show all available features and commands."""
@@ -206,8 +243,10 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     help_text = (
         "🤖 *OpenClaw/Agent Zero Bot Help*\n\n"
         "*Commands:*\n"
-        "/schedule \\<seconds\\> \\<prompt\\> \\- Schedule a recurring task\\.\n"
-        "/stopschedule \\- Stop all currently running scheduled tasks\\.\n"
+        "/schedule \\<name\\> \\<seconds\\> \\<prompt\\> \\- Schedule a recurring task\\.\n"
+        "  _Example: /schedule btc 600 Check the price of Bitcoin_\n"
+        "/stopschedule \\[name\\] \\- Stop a specific schedule by name, or all if no name provided\\.\n"
+        "/schedules \\- List all running schedules\\.\n"
         "/help \\- Show this information\\.\n\n"
         "*Features:*\n"
         "• *Chatting:* Simply send any text message to get a response from the model \\(`" + safe_model + "`\\)\\.\n"
@@ -236,6 +275,7 @@ def main():
     # Handle commands for scheduling
     application.add_handler(CommandHandler("schedule", schedule_command))
     application.add_handler(CommandHandler("stopschedule", stop_schedule_command))
+    application.add_handler(CommandHandler("schedules", schedules_command))
     
     # Handle the help command
     application.add_handler(CommandHandler("help", help_command))

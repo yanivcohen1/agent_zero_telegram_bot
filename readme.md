@@ -76,3 +76,14 @@
  # init 
  docker exec -it openclaw_main openclaw agents add custom-127-0-0-1-11434
  
+ ---
+ 
+ # Bot Commands
+ 
+ - `/help` - Show the help menu.
+ - `/schedule <name> <seconds> <prompt>` - Schedule a recurring task.
+   - Example: `/schedule btc 600 Check the price of Bitcoin`
+ - `/stopschedule [name]` - Stop a specific schedule by name, or all if no name is provided.
+ - `/schedules` - List all currently running schedules.
+ - `get pic <filename>` - Retrieve a saved photo.
+ 
