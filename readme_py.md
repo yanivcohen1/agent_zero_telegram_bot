@@ -3,3 +3,6 @@ py -m venv .venv
 py where
 py -m pip install -r .\requirements.txt
 py -m pip install --upgrade pip
+
+# run it with dev default
+py bot.py

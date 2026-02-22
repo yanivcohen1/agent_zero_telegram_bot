@@ -1,3 +1,6 @@
 python-telegram-bot
 langchain-community
+langchain-ollama
+agent-zero
+ollama
 requests
