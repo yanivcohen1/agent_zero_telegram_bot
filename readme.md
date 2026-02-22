@@ -81,6 +81,9 @@
  # Bot Commands
  
  - `/help` - Show the help menu.
+ - `/new` - Start a new session (clear conversation history).
+ - `/stop` - Stop the current conversation and clear session (not schedules).
+ - `/restart` - Restart the session (combination of stop and new).
  - `/schedule <name> <seconds> <prompt>` - Schedule a recurring task.
    - Example: `/schedule btc 600 Check the price of Bitcoin`
  - `/stopschedule [name]` - Stop a specific schedule by name, or all if no name is provided.

@@ -22,6 +22,8 @@ PIC_DIR = "pic"
 os.makedirs(PIC_DIR, exist_ok=True)
 
 agent = None
+llm = None
+dev_chat_history = []
 
 if ENVIRONMENT == "dev":
     import ollama
@@ -41,16 +43,22 @@ else:
     # 2. Initialize the Agent Zero Agent
     agent = Agent(llm=llm, headless=True)
 
+def reset_session():
+    global agent, dev_chat_history
+    if ENVIRONMENT == "dev":
+        dev_chat_history = []
+    else:
+        if llm:
+            agent = Agent(llm=llm, headless=True)
+
 def run_agent_sync(prompt: str, screenshot_path: str) -> str:
     """Runs the agent synchronously. This is executed in a separate thread."""
+    global dev_chat_history
     if ENVIRONMENT == "dev":
         client = ollama.Client(host=OLLAMA_URL)
-        response = client.chat(model=OLLAMA_MODEL, messages=[
-            {
-                'role': 'user',
-                'content': prompt,
-            },
-        ])
+        dev_chat_history.append({'role': 'user', 'content': prompt})
+        response = client.chat(model=OLLAMA_MODEL, messages=dev_chat_history)
+        dev_chat_history.append({'role': 'assistant', 'content': response['message']['content']})
         return response['message']['content']
     else:
         result = agent.run(prompt)
@@ -229,6 +237,27 @@ async def schedules_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
     await update.message.reply_text(text)
 
+async def new_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Command to start a new session."""
+    if update.message.from_user.id != MY_ID: return
+    logging.info(f"📜 COMMAND [New] from {update.message.from_user.first_name}")
+    reset_session()
+    await update.message.reply_text("✨ New session started. Conversation history cleared.")
+
+async def stop_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Command to stop the current conversation."""
+    if update.message.from_user.id != MY_ID: return
+    logging.info(f"📜 COMMAND [Stop] from {update.message.from_user.first_name}")
+    reset_session()
+    await update.message.reply_text("🛑 Conversation stopped and session cleared.")
+
+async def restart_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Command to restart the session."""
+    if update.message.from_user.id != MY_ID: return
+    logging.info(f"📜 COMMAND [Restart] from {update.message.from_user.first_name}")
+    reset_session()
+    await update.message.reply_text("🔄 Session restarted. Ready for a new conversation.")
+
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Command to show all available features and commands."""
     if update.message.from_user.id != MY_ID:
@@ -243,6 +272,9 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     help_text = (
         "🤖 *OpenClaw/Agent Zero Bot Help*\n\n"
         "*Commands:*\n"
+        "/new \\- Start a new session \\(clear conversation history\\)\\.\n"
+        "/stop \\- Stop the current conversation and clear session\\.\n"
+        "/restart \\- Restart the session \\(same as /new and /stop\\)\\.\n"
         "/schedule \\<name\\> \\<seconds\\> \\<prompt\\> \\- Schedule a recurring task\\.\n"
         "  _Example: /schedule btc 600 Check the price of Bitcoin_\n"
         "/stopschedule \\[name\\] \\- Stop a specific schedule by name, or all if no name provided\\.\n"
@@ -276,6 +308,11 @@ def main():
     application.add_handler(CommandHandler("schedule", schedule_command))
     application.add_handler(CommandHandler("stopschedule", stop_schedule_command))
     application.add_handler(CommandHandler("schedules", schedules_command))
+    
+    # Handle session commands
+    application.add_handler(CommandHandler("new", new_command))
+    application.add_handler(CommandHandler("stop", stop_command))
+    application.add_handler(CommandHandler("restart", restart_command))
     
     # Handle the help command
     application.add_handler(CommandHandler("help", help_command))

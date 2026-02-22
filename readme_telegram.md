@@ -107,6 +107,9 @@ openclaw pairing approve telegram ZADX65W4
 The bot supports the following commands:
 
 - `/help` - Show the help menu with all available commands and features.
+- `/new` - Start a new session (clear conversation history).
+- `/stop` - Stop the current conversation (this does NOT affect schedules).
+- `/restart` - Restart the session (completes a stop followed by a new session).
 - `/schedule <name> <seconds> <prompt>` - Schedule a recurring task.
   - Example: `/schedule btc 600 Check the price of Bitcoin`
 - `/stopschedule [name]` - Stop a specific schedule by name, or all if no name is provided.

@@ -12,6 +12,9 @@ py bot.py
 ## Bot Commands
 
 - `/help` - Show the help menu.
+- `/new` - Start a new session (clear history).
+- `/stop` - Stop current conversation (not schedules).
+- `/restart` - Restart conversation session.
 - `/schedule <name> <seconds> <prompt>` - Schedule a recurring task.
   - Example: `/schedule btc 600 Check the price of Bitcoin`
 - `/stopschedule [name]` - Stop a specific schedule by name, or all if no name is provided.
