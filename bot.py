@@ -51,19 +51,26 @@ def reset_session():
         if llm:
             agent = Agent(llm=llm, headless=True)
 
-def run_agent_sync(prompt: str, screenshot_path: str) -> str:
+def run_agent_sync(prompt: str, screenshot_path: str, is_scheduled: bool = False) -> str:
     """Runs the agent synchronously. This is executed in a separate thread."""
-    global dev_chat_history
+    global dev_chat_history, agent, llm
     if ENVIRONMENT == "dev":
         client = ollama.Client(host=OLLAMA_URL)
-        dev_chat_history.append({'role': 'user', 'content': prompt})
-        response = client.chat(model=OLLAMA_MODEL, messages=dev_chat_history)
-        dev_chat_history.append({'role': 'assistant', 'content': response['message']['content']})
-        return response['message']['content']
+        if is_scheduled:
+            # Run isolated, do not affect chat history
+            response = client.chat(model=OLLAMA_MODEL, messages=[{'role': 'user', 'content': prompt}])
+            return response['message']['content']
+        else:
+            dev_chat_history.append({'role': 'user', 'content': prompt})
+            response = client.chat(model=OLLAMA_MODEL, messages=dev_chat_history)
+            dev_chat_history.append({'role': 'assistant', 'content': response['message']['content']})
+            return response['message']['content']
     else:
-        result = agent.run(prompt)
-        if hasattr(agent, 'browser') and agent.browser:
-            agent.browser.page.screenshot(path=screenshot_path)
+        # Use a temporary agent for scheduled tasks to avoid messing with the main session
+        current_agent = Agent(llm=llm, headless=True) if is_scheduled else agent
+        result = current_agent.run(prompt)
+        if hasattr(current_agent, 'browser') and current_agent.browser:
+            current_agent.browser.page.screenshot(path=screenshot_path)
         return result
 
 async def process_agent_task(prompt: str, chat_id: int, context: ContextTypes.DEFAULT_TYPE, is_scheduled: bool = False):
@@ -74,7 +81,7 @@ async def process_agent_task(prompt: str, chat_id: int, context: ContextTypes.DE
         screenshot_path = f"action_{chat_id}.png"
         
         # Run the agent task in a separate thread to avoid blocking the Telegram bot event loop
-        result = await asyncio.to_thread(run_agent_sync, prompt, screenshot_path)
+        result = await asyncio.to_thread(run_agent_sync, prompt, screenshot_path, is_scheduled)
 
         # Send the text response
         await context.bot.send_message(chat_id=chat_id, text=f"✅ {prefix} Completed!\n\nResponse:\n{result}")
@@ -182,7 +189,8 @@ async def schedule_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             interval=interval, 
             first=5, # run first time after 5 seconds
             data={'prompt': prompt, 'chat_id': chat_id, 'interval': interval},
-            name=name
+            name=name,
+            job_kwargs={'max_instances': 2} # Allow up to 5 overlapping instances of this specific job
         )
         
         await update.message.reply_text(f"✅ Scheduled task '{name}' added! Will run '{prompt}' every {interval} seconds.")
