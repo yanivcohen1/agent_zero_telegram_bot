@@ -10,10 +10,16 @@ py agent_zero_telegram_bot.py
 # bot RUN
 /a0/usr/workdir/telegram_bot/agent_zero_telegram_bot.py.
 docker cp .\agent_zero_telegram_bot.py agent-zero:/a0/usr/workdir/telegram_bot/
+# run in new session not dettach mode kill it when exit
 docker exec -it agent-zero /bin/bash
 cd /a0/usr/workdir/telegram_bot/
 chmod +x run.sh
 ./run.sh
+# stop the run
+exit
+# run in new session not dettach mode kill it when exit
+docker exec -d agent-zero ./run.sh
+docker logs -f agent-zero
 ---
 
 ## Bot Commands

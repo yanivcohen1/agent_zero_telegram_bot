@@ -2,6 +2,6 @@ python-telegram-bot
 python-telegram-bot[job-queue]
 langchain-community
 langchain-ollama
-agent-zero
+# agent-zero
 ollama
 requests

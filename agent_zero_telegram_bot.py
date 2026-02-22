@@ -17,7 +17,10 @@ OLLAMA_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3:8b")
 ENVIRONMENT = os.getenv("ENVIRONMENT", "dev")
 PIC_DIR = "pic"
-
+if os.name != 'nt':
+    # Linux/Mac
+    logging.info("Running in Linux.")
+    OLLAMA_URL = "http://host.docker.internal:11434"
 # Ensure the pictures directory exists
 os.makedirs(PIC_DIR, exist_ok=True)
 
@@ -32,12 +35,6 @@ else:
     from agent_zero import Agent
     from langchain_community.llms import Ollama
     logging.info("Running in PROD mode using Agent Zero.")
-    if os.name == 'nt':  # Windows
-        logging.info("Running in Windows.")
-        OLLAMA_URL = "http://localhost:11434"
-    else:  # Linux/Mac
-        logging.info("Running in Linux.")
-        OLLAMA_URL = "http://host.docker.internal:11434"
     # 1. Initialize the LLM - Using local Ollama
     llm = Ollama(model=OLLAMA_MODEL, base_url=OLLAMA_URL)
     # 2. Initialize the Agent Zero Agent
