@@ -7,7 +7,7 @@ py -m pip install --upgrade pip
 # run it with dev default
 py agent_zero_telegram_bot.py
 
-# bot location
+# bot RUN
 /a0/usr/workdir/agent_zero_telegram_bot.py.
 docker cp .\agent_zero_telegram_bot.py agent-zero:/a0/usr/workdir/telegram_bot/
 chmod +x run.sh
