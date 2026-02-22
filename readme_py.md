@@ -14,8 +14,7 @@ docker cp .\agent_zero_telegram_bot.py agent-zero:/a0/usr/workdir/telegram_bot/
 docker exec -it agent-zero /bin/bash
 cd /a0/usr/workdir/telegram_bot/
 chmod +x run.sh
-ENVIRONMENT=prod
-./run.sh
+export ENVIRONMENT=prod;./run.sh
 # stop the run
 exit
 # run in new session not dettach mode kill it when exit
