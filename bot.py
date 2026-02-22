@@ -95,6 +95,9 @@ async def handle_request(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_query = update.message.text
     chat_id = update.message.chat_id
     
+    # Print what the user sent
+    logging.info(f"💬 RECV [Text] from {update.message.from_user.first_name} ({update.message.from_user.id}): {user_query}")
+    
     # Check if the user is asking for a specific picture
     if user_query.lower().startswith("get pic "):
         pic_name = user_query[8:].strip()
@@ -119,6 +122,8 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     photo_file = await update.message.photo[-1].get_file()
+    caption = update.message.caption if update.message.caption else "[No Caption]"
+    logging.info(f"📸 RECV [Photo] from {update.message.from_user.first_name} ({update.message.from_user.id}) - Caption: {caption}")
     
     # Use caption as filename if provided, otherwise use a default name
     filename = update.message.caption if update.message.caption else f"photo_{update.message.message_id}.jpg"
@@ -143,6 +148,8 @@ async def schedule_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message.from_user.id != MY_ID:
         await update.message.reply_text("⛔ Access Denied.")
         return
+
+    logging.info(f"📜 COMMAND [Schedule] from {update.message.from_user.first_name}: {update.message.text}")
 
     try:
         interval = int(context.args[0])
@@ -173,6 +180,8 @@ async def stop_schedule_command(update: Update, context: ContextTypes.DEFAULT_TY
     if update.message.from_user.id != MY_ID:
         return
     
+    logging.info(f"📜 COMMAND [StopSchedule] from {update.message.from_user.first_name}")
+
     current_jobs = context.job_queue.jobs()
     if not current_jobs:
         await update.message.reply_text("No scheduled tasks running.")
@@ -188,17 +197,23 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message.from_user.id != MY_ID:
         return
 
+    logging.info(f"📜 COMMAND [Help] from {update.message.from_user.first_name}")
+
+    # Properly escape OLLAMA_MODEL and ENVIRONMENT for MarkdownV2
+    safe_model = OLLAMA_MODEL.replace('-', '\\-').replace('.', '\\.')
+    safe_env = ENVIRONMENT.replace('-', '\\-').replace('.', '\\.')
+
     help_text = (
         "🤖 *OpenClaw/Agent Zero Bot Help*\n\n"
         "*Commands:*\n"
-        "/schedule <seconds> <prompt> \\- Schedule a recurring task\\.\n"
+        "/schedule \\<seconds\\> \\<prompt\\> \\- Schedule a recurring task\\.\n"
         "/stopschedule \\- Stop all currently running scheduled tasks\\.\n"
         "/help \\- Show this information\\.\n\n"
         "*Features:*\n"
-        "• *Chatting:* Simply send any text message to get a response from the model \\(`" + OLLAMA_MODEL + "`\\)\\.\n"
+        "• *Chatting:* Simply send any text message to get a response from the model \\(`" + safe_model + "`\\)\\.\n"
         "• *Storing Photos:* Send a photo to the bot to save it\\. If you provide a caption, the photo will be saved with that name \\(e\\.g\\., `my_document`\\)\\.\n"
-        "• *Retrieving Photos:* Type `get pic <filename>` to have the bot send a saved photo back to you\\.\n\n"
-        "Current Mode: `" + ENVIRONMENT + "`"
+        "• *Retrieving Photos:* Type `get pic \\<filename\\>` to have the bot send a saved photo back to you\\.\n\n"
+        "Current Mode: `" + safe_env + "`"
     )
     
     await update.message.reply_text(help_text, parse_mode='MarkdownV2')
