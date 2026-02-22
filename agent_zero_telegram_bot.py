@@ -324,6 +324,7 @@ def main():
 
     logging.info(f"Bot started successfully for authorized user: {MY_ID}")
     logging.info(f"Using Ollama Model: {OLLAMA_MODEL} at {OLLAMA_URL}")
+    logging.info(f"Environment: {ENVIRONMENT}")
     
     # Start the bot
     application.run_polling()
