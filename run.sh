@@ -40,4 +40,4 @@ pip install --only-binary :all: orjson || true
 pip install -r requirements.txt
 
 echo "🤖 Starting the Telegram Bot..."
-python bot.py
+python agent_zero_telegram_bot.py

@@ -5,8 +5,10 @@ py -m pip install -r .\requirements.txt
 py -m pip install --upgrade pip
 
 # run it with dev default
-py bot.py
+py agent_zero_telegram_bot.py
 
+# bot location
+/a0/usr/workdir/agent_zero_telegram_bot.py.
 ---
 
 ## Bot Commands
