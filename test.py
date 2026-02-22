@@ -34,24 +34,50 @@ if ENVIRONMENT == "dev":
 else:
     import sys
     import os
-    
-    # Point to the directory containing agent.py
-    sys.path.insert(0, '/a0')
-    
-    try:
-        # This looks for 'agent.py' in /a0 and imports the 'Agent' class
-        from agent import Agent
-        print("✅ Success: Agent Zero framework loaded from /a0/agent.py")
-    except ImportError as e:
-        print(f"❌ Import failed. Error: {e}")
-        sys.exit(1)
-    # Now import the Ollama LLM wrapper from langchain-community
-    from langchain_community.llms import Ollama
-    logging.info("Running in PROD mode using Agent Zero.")
-    # 1. Initialize the LLM - Using local Ollama
-    llm = Ollama(model=OLLAMA_MODEL, base_url=OLLAMA_URL)
-    # 2. Initialize the Agent Zero Agent
-    agent = Agent(llm=llm, headless=True)
+
+    # Absolute paths to the framework root
+    FRAMEWORK_ROOT = "/a0"
+    PYTHON_HELPERS = "/a0/python"
+
+    # Insert them at the start of the path
+    if FRAMEWORK_ROOT not in sys.path:
+        sys.path.insert(0, FRAMEWORK_ROOT)
+    if PYTHON_HELPERS not in sys.path:
+        sys.path.insert(0, PYTHON_HELPERS)
+
+    # Now try the imports
+    import models
+    from models import ModelConfig, ModelType
+    from agent import AgentConfig, Agent
+
+    # Define a single config for all 'Chat-like' tasks
+    ollama_config = ModelConfig(
+        type=ModelType.CHAT,           # Use CHAT here
+        provider="ollama",
+        name=OLLAMA_MODEL, 
+        api_base=OLLAMA_URL
+    )
+
+    # Define the embedding config
+    embedding_config = ModelConfig(
+        type=ModelType.EMBEDDING,
+        provider="ollama", 
+        name="ollama/mxbai-embed-large:latest", # Explicit tag
+        api_base=OLLAMA_URL
+    )
+
+    # Create the master config
+    config = AgentConfig(
+        chat_model=ollama_config,
+        utility_model=ollama_config,   # Use the CHAT config for utility too
+        embeddings_model=embedding_config,
+        browser_model=ollama_config,
+        mcp_servers=""
+    )
+
+    # Initialize the Agent
+    agent = Agent(number=1, config=config)
+    print("🚀 Agent Zero is fully initialized and ready!")
 
 def reset_session():
     global agent, dev_chat_history
@@ -76,12 +102,29 @@ def run_agent_sync(prompt: str, screenshot_path: str, is_scheduled: bool = False
             dev_chat_history.append({'role': 'assistant', 'content': response['message']['content']})
             return response['message']['content']
     else:
-        # Use a temporary agent for scheduled tasks to avoid messing with the main session
-        current_agent = Agent(llm=llm, headless=True) if is_scheduled else agent
-        result = current_agent.run(prompt)
-        if hasattr(current_agent, 'browser') and current_agent.browser:
-            current_agent.browser.page.screenshot(path=screenshot_path)
-        return result
+        from agent import UserMessage
+        current_agent = Agent(number=2, config=config) if is_scheduled else agent
+        
+        # Manually initialize loop_data if it hasn't been
+        if not hasattr(current_agent, 'loop_data') or current_agent.loop_data is None:
+            from agent import LoopData
+            current_agent.loop_data = LoopData()
+
+        # Set the message properly for the extensions to see
+        user_msg = UserMessage(message=prompt)
+        current_agent.last_user_message = user_msg
+        current_agent.loop_data.user_message = user_msg
+        
+        # Run the monologue
+        asyncio.run(current_agent.monologue())
+        
+        # Return the last assistant response
+        if current_agent.history.messages:
+            for msg in reversed(current_agent.history.messages):
+                if msg.role == "assistant":
+                    return msg.content
+        
+        return "Agent processed the request but no assistant message was found."
 
 async def process_agent_task(prompt: str, chat_id: int, context: ContextTypes.DEFAULT_TYPE, is_scheduled: bool = False):
     prefix = "⏰ Scheduled Task" if is_scheduled else "🚀 Task"
