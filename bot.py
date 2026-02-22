@@ -30,7 +30,12 @@ else:
     from agent_zero import Agent
     from langchain_community.llms import Ollama
     logging.info("Running in PROD mode using Agent Zero.")
-    OLLAMA_URL = "http://host.docker.internal:11434"
+    if os.name == 'nt':  # Windows
+        logging.info("Running in Windows.")
+        OLLAMA_URL = "http://localhost:11434"
+    else:  # Linux/Mac
+        logging.info("Running in Linux.")
+        OLLAMA_URL = "http://host.docker.internal:11434"
     # 1. Initialize the LLM - Using local Ollama
     llm = Ollama(model=OLLAMA_MODEL, base_url=OLLAMA_URL)
     # 2. Initialize the Agent Zero Agent
