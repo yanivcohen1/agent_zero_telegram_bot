@@ -9,6 +9,9 @@ py agent_zero_telegram_bot.py
 
 # bot location
 /a0/usr/workdir/agent_zero_telegram_bot.py.
+docker cp .\agent_zero_telegram_bot.py agent-zero:/a0/usr/workdir/telegram_bot/
+chmod +x run.sh
+./run.sh
 ---
 
 ## Bot Commands
