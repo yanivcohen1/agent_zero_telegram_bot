@@ -1,0 +1,16 @@
+version: '3.8'
+services:
+  openclaw-bot:
+    build: .
+    container_name: openclaw_telegram_bot
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - TELEGRAM_TOKEN=8197057846:AAFvJg7eVDjKxBXPnnAjKRGwdaq6o4mTLqg
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - MY_USER_ID=6977408305
+      - OPENAI_API_KEY=
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: always
