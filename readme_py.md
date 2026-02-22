@@ -14,6 +14,7 @@ docker cp .\agent_zero_telegram_bot.py agent-zero:/a0/usr/workdir/telegram_bot/
 docker exec -it agent-zero /bin/bash
 cd /a0/usr/workdir/telegram_bot/
 chmod +x run.sh
+. .venv/bin/activate
 export ENVIRONMENT=prod;./run.sh
 # stop the run
 exit
