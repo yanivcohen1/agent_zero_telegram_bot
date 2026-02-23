@@ -234,9 +234,6 @@ async def handle_request(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logging.warning(
             f"Unauthorized access attempt by ID: {update.message.from_user.id}"
         )
-        await update.message.reply_text(
-            "⛔ Access Denied: You are not my administrator."
-        )
         return
 
     user_query = update.message.text
@@ -321,7 +318,6 @@ async def scheduled_job(context: ContextTypes.DEFAULT_TYPE):
 async def schedule_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Command to schedule a recurring task. Usage: /schedule <name> <seconds> <prompt>"""
     if update.message.from_user.id != MY_ID:
-        await update.message.reply_text("⛔ Access Denied.")
         return
     logging.info(
         f"📜 COMMAND [Schedule] from {update.message.from_user.first_name}: {update.message.text}"
