@@ -40,9 +40,12 @@ os.makedirs(PIC_DIR, exist_ok=True)
 
 # Agent Zero API Settings
 AGENT_ZERO_URL = os.getenv("AGENT_ZERO_URL", "http://localhost:5000")
-AGENT_ZERO_API_KEY = os.getenv("AGENT_ZERO_API_KEY", "EgfPROzPNm3Soxf3") # Find this in Agent Zero Settings > External Services
+AGENT_ZERO_API_KEY = os.getenv(
+    "AGENT_ZERO_API_KEY", "EgfPROzPNm3Soxf3"
+)  # Find this in Agent Zero Settings > External Services
 
 context_id = None
+
 
 def reset_session():
     global context_id
@@ -58,15 +61,9 @@ async def run_agent_sync(
 
     try:
 
-        headers = {
-            'Content-Type': 'application/json',
-            'X-API-KEY': AGENT_ZERO_API_KEY
-        }
+        headers = {"Content-Type": "application/json", "X-API-KEY": AGENT_ZERO_API_KEY}
 
-        payload = {
-            "message": prompt,
-            "lifetime_hours": 24
-        }
+        payload = {"message": prompt, "lifetime_hours": 24}
         if attachments:
             payload["attachments"] = attachments
         if context_id and not is_scheduled:
@@ -74,39 +71,49 @@ async def run_agent_sync(
             logging.info(f"Sending request with context_id: {context_id}")
         # Run the synchronous requests.post in a separate thread to avoid blocking the async event loop
         response = await asyncio.to_thread(
-            requests.post, 
-            f"{AGENT_ZERO_URL}/api_message", 
-            json=payload, 
-            headers=headers
+            requests.post,
+            f"{AGENT_ZERO_URL}/api_message",
+            json=payload,
+            headers=headers,
         )
 
         if response.status_code == 200:
             data = response.json()
-            
+
             # LOG THE FULL RESPONSE TO SEE WHAT AGENT ZERO IS ACTUALLY SENDING
             logging.info(f"RAW API RESPONSE: {data}")
-            
+
             if not is_scheduled:
                 # Try multiple possible keys that Agent Zero might be using for the ID
-                new_context_id = data.get("context_id") or data.get("id") or data.get("session_id") or data.get("chat_id")
-                
+                new_context_id = (
+                    data.get("context_id")
+                    or data.get("id")
+                    or data.get("session_id")
+                    or data.get("chat_id")
+                )
+
                 if new_context_id:
                     context_id = new_context_id
                     logging.info(f"Updated context_id to: {context_id}")
                 else:
-                    logging.warning("WARNING: Could not find any ID in the Agent Zero response!")
-                    
-            bot_response = data.get("response", "I processed your message, but didn't generate a final text response.")
+                    logging.warning(
+                        "WARNING: Could not find any ID in the Agent Zero response!"
+                    )
+
+            bot_response = data.get(
+                "response",
+                "I processed your message, but didn't generate a final text response.",
+            )
             logging.info(f"🤖 BOT RESPONSE: {bot_response}")
-            
+
             # Extract image paths from the response
-            image_paths = re.findall(r'!\[.*?\]\((.*?)\)', bot_response)
-            
+            image_paths = re.findall(r"!\[.*?\]\((.*?)\)", bot_response)
+
             # Clean up paths (remove img:// prefix if present)
-            cleaned_paths = [path.replace('img://', '') for path in image_paths]
-            
+            cleaned_paths = [path.replace("img://", "") for path in image_paths]
+
             downloaded_images = []
-            
+
             if cleaned_paths:
                 logging.info(f"Found image paths in response: {cleaned_paths}")
                 try:
@@ -114,9 +121,9 @@ async def run_agent_sync(
                         requests.post,
                         f"{AGENT_ZERO_URL}/api_files_get",
                         json={"paths": cleaned_paths},
-                        headers=headers
+                        headers=headers,
                     )
-                    
+
                     if files_response.status_code == 200:
                         files_data = files_response.json()
                         for filename, base64_content in files_data.items():
@@ -128,17 +135,23 @@ async def run_agent_sync(
                                 with open(local_path, "wb") as f:
                                     f.write(image_data)
                                 downloaded_images.append(local_path)
-                                logging.info(f"Successfully downloaded image to {local_path}")
+                                logging.info(
+                                    f"Successfully downloaded image to {local_path}"
+                                )
                             except Exception as e:
-                                logging.error(f"Error decoding/saving image {filename}: {e}")
+                                logging.error(
+                                    f"Error decoding/saving image {filename}: {e}"
+                                )
                     else:
-                        logging.error(f"Failed to fetch images. Status code: {files_response.status_code}")
+                        logging.error(
+                            f"Failed to fetch images. Status code: {files_response.status_code}"
+                        )
                 except Exception as e:
                     logging.error(f"Error fetching images from Agent Zero: {e}")
 
             # Remove the markdown image links from the text response so they don't show up as broken links in Telegram
-            clean_bot_response = re.sub(r'!\[.*?\]\(.*?\)', '', bot_response).strip()
-            
+            clean_bot_response = re.sub(r"!\[.*?\]\(.*?\)", "", bot_response).strip()
+
             return clean_bot_response, downloaded_images
         else:
             error_msg = f"API Error {response.status_code}: {response.text}"
@@ -148,7 +161,10 @@ async def run_agent_sync(
     except Exception as e:
         error_msg = f"Error during API execution: {e}"
         logging.error(error_msg)
-        return "I'm having trouble connecting to my internal tools. Try asking me a simple question without code!", []
+        return (
+            "I'm having trouble connecting to my internal tools. Try asking me a simple question without code!",
+            [],
+        )
 
 
 async def process_agent_task(
@@ -156,7 +172,7 @@ async def process_agent_task(
     chat_id: int,
     context: ContextTypes.DEFAULT_TYPE,
     is_scheduled: bool = False,
-    attachments: list = None
+    attachments: list = None,
 ):
     prefix = "⏰ Scheduled Task" if is_scheduled else "🚀 Task"
     await context.bot.send_message(
@@ -165,7 +181,9 @@ async def process_agent_task(
     try:
         screenshot_path = f"action_{chat_id}.png"
         # FIX: Await the async function directly instead of using to_thread
-        result, downloaded_images = await run_agent_sync(prompt, is_scheduled, screenshot_path, attachments)
+        result, downloaded_images = await run_agent_sync(
+            prompt, is_scheduled, screenshot_path, attachments
+        )
         # Send the text response
         await context.bot.send_message(
             chat_id=chat_id, text=f"✅ {prefix} Completed!\n\nResponse:\n{result}"
@@ -194,7 +212,7 @@ async def process_agent_task(
                         logging.error(f"Failed to send document {img_path}: {doc_e}")
                         await context.bot.send_message(
                             chat_id=chat_id,
-                            text=f"❌ Could not send the image '{os.path.basename(img_path)}'. It might be too large or have invalid dimensions."
+                            text=f"❌ Could not send the image '{os.path.basename(img_path)}'. It might be too large or have invalid dimensions.",
                         )
         # Send the screenshot to the user if it exists
         if os.path.exists(screenshot_path):
@@ -246,6 +264,7 @@ async def handle_request(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Process the task asynchronously
     asyncio.create_task(process_agent_task(user_query, chat_id, context))
 
+
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handles incoming photos and saves them with their caption or a default name."""
     if update.message.from_user.id != MY_ID:
@@ -259,7 +278,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message.caption:
         # Sanitize the caption to be a valid filename
         # Replace invalid characters and newlines with underscores
-        safe_caption = re.sub(r'[<>:"/\\|?*\n\r]', '_', update.message.caption)
+        safe_caption = re.sub(r'[<>:"/\\|?*\n\r]', "_", update.message.caption)
         # Limit length to avoid too long filenames
         filename = safe_caption[:50].strip()
     else:
@@ -275,17 +294,23 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Send the photo to Agent Zero
     try:
         with open(full_path, "rb") as f:
-            base64_content = base64.b64encode(f.read()).decode('utf-8')
-            
-        attachments = [{
-            "filename": filename,
-            "base64": base64_content
-        }]
-        prompt = update.message.caption if update.message.caption else "Please analyze this image."
-        asyncio.create_task(process_agent_task(prompt, update.message.chat_id, context, attachments=attachments))
+            base64_content = base64.b64encode(f.read()).decode("utf-8")
+
+        attachments = [{"filename": filename, "base64": base64_content}]
+        prompt = (
+            update.message.caption
+            if update.message.caption
+            else "Please analyze this image."
+        )
+        asyncio.create_task(
+            process_agent_task(
+                prompt, update.message.chat_id, context, attachments=attachments
+            )
+        )
     except Exception as e:
         logging.error(f"Error sending photo to Agent Zero: {e}")
         await update.message.reply_text(f"❌ Error sending photo to Agent Zero: {e}")
+
 
 async def scheduled_job(context: ContextTypes.DEFAULT_TYPE):
     """The job that runs on a schedule."""
@@ -293,6 +318,7 @@ async def scheduled_job(context: ContextTypes.DEFAULT_TYPE):
     prompt = job.data["prompt"]
     chat_id = job.data["chat_id"]
     await process_agent_task(prompt, chat_id, context, is_scheduled=True)
+
 
 async def schedule_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Command to schedule a recurring task. Usage: /schedule <name> <seconds> <prompt>"""
@@ -365,6 +391,7 @@ async def stop_schedule_command(update: Update, context: ContextTypes.DEFAULT_TY
             job.schedule_removal()
         await update.message.reply_text("✅ All scheduled tasks stopped.")
 
+
 async def schedules_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Command to list all scheduled tasks."""
     if update.message.from_user.id != MY_ID:
@@ -381,6 +408,7 @@ async def schedules_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         text += f"• {job.name} (every {interval}s): {prompt}\n"
     await update.message.reply_text(text)
 
+
 async def new_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Command to start a new session."""
     if update.message.from_user.id != MY_ID:
@@ -391,6 +419,7 @@ async def new_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "✨ New session started. Conversation history cleared."
     )
 
+
 async def stop_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Command to stop the current conversation."""
     if update.message.from_user.id != MY_ID:
@@ -398,6 +427,7 @@ async def stop_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logging.info(f"📜 COMMAND [Stop] from {update.message.from_user.first_name}")
     reset_session()
     await update.message.reply_text("🛑 Conversation stopped and session cleared.")
+
 
 async def restart_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Command to restart the session."""
@@ -408,6 +438,7 @@ async def restart_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "🔄 Session restarted. Ready for a new conversation."
     )
+
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Command to show all available features and commands."""
@@ -438,6 +469,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     await update.message.reply_text(help_text, parse_mode="MarkdownV2")
 
+
 def main():
     # Verify environment variables are present
     if not TOKEN or MY_ID == 0:
@@ -466,6 +498,7 @@ def main():
     logging.info(f"Environment: {ENVIRONMENT}")
     # Start the bot
     application.run_polling()
+
 
 if __name__ == "__main__":
 
