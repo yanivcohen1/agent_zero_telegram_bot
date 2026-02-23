@@ -2,6 +2,7 @@ import os
 import asyncio
 import logging
 import requests
+import uuid
 from telegram import Update
 from telegram.ext import (
     Application,
@@ -81,6 +82,7 @@ async def run_agent_sync(
 
         if context_id and not is_scheduled:
             payload["context_id"] = context_id
+            logging.info(f"Sending request with context_id: {context_id}")
 
         # Run the synchronous requests.post in a separate thread to avoid blocking the async event loop
         response = await asyncio.to_thread(
@@ -92,10 +94,20 @@ async def run_agent_sync(
 
         if response.status_code == 200:
             data = response.json()
+            
+            # LOG THE FULL RESPONSE TO SEE WHAT AGENT ZERO IS ACTUALLY SENDING
+            logging.info(f"RAW API RESPONSE: {data}")
+            
             if not is_scheduled:
-                new_context_id = data.get("context_id")
+                # Try multiple possible keys that Agent Zero might be using for the ID
+                new_context_id = data.get("context_id") or data.get("id") or data.get("session_id") or data.get("chat_id")
+                
                 if new_context_id:
                     context_id = new_context_id
+                    logging.info(f"Updated context_id to: {context_id}")
+                else:
+                    logging.warning("WARNING: Could not find any ID in the Agent Zero response!")
+                    
             bot_response = data.get("response", "I processed your message, but didn't generate a final text response.")
             logging.info(f"🤖 BOT RESPONSE: {bot_response}")
             return bot_response
@@ -484,7 +496,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "• *Chatting:* Simply send any text message to get a response from the model \\(`"
         + safe_model
         + "`\\)\\.\n"
-        "• *Storing Photos:* Send a photo to the bot to save it\\. If you provide a caption, the photo will be saved with that name \\(e\\.g\\., `my_document`\\)\\.\n"
+        "• *Storing Photos:* Send a photo to the bot to save it\\. If you provide a caption, the photo will be saved with that name \\(e\\.g\\., `my_document`\\)\\. The photo will also be sent to Agent Zero for analysis\\.\n"
         "• *Retrieving Photos:* Type `get pic \\<filename\\>` to have the bot send a saved photo back to you\\.\n\n"
         "Current Mode: `" + safe_env + "`"
     )
