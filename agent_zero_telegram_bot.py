@@ -14,7 +14,7 @@ logging.basicConfig(
 TOKEN = os.getenv("TELEGRAM_TOKEN", "8531898414:AAHe2o9A1Nb7Q3gd3m0PHKSV23tBjdTxOdU")
 MY_ID = int(os.getenv("MY_USER_ID", "6977408305"))
 OLLAMA_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3:8b")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3:1.7b")
 ENVIRONMENT = os.getenv("ENVIRONMENT", "dev")
 PIC_DIR = "pic"
 if os.name != 'nt':
