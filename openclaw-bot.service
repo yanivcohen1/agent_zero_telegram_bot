@@ -1,0 +1,15 @@
+[Unit]
+Description=OpenClaw Telegram Bot Service
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/a0/usr/workdir/telegram_bot
+ExecStart=/bin/bash /a0/usr/workdir/telegram_bot/run.sh
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
