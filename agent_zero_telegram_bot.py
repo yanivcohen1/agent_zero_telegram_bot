@@ -27,7 +27,7 @@ MY_ID = int(os.getenv("MY_USER_ID", "6977408305"))
 
 OLLAMA_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "gemini-3-flash-preview:latest")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3:1.7b")
 
 ENVIRONMENT = os.getenv("ENVIRONMENT", "dev")
 
@@ -74,19 +74,12 @@ async def run_agent_sync(
             'X-API-KEY': AGENT_ZERO_API_KEY
         }
 
-        task_prompt = (
-            f"User says: {prompt}. "
-            "You have access to terminal tools and file system. "
-            "If the user wants you to perform an action, use the appropriate tool. "
-            "If you use a tool, make sure your final response includes the results."
-        )
-
         payload = {
-            "message": task_prompt,
+            "message": prompt,
             "lifetime_hours": 24
         }
 
-        if context_id:
+        if context_id and not is_scheduled:
             payload["context_id"] = context_id
 
         # Run the synchronous requests.post in a separate thread to avoid blocking the async event loop
@@ -99,7 +92,8 @@ async def run_agent_sync(
 
         if response.status_code == 200:
             data = response.json()
-            context_id = data.get("context_id")
+            if not is_scheduled:
+                context_id = data.get("context_id")
             bot_response = data.get("response", "I processed your message, but didn't generate a final text response.")
             logging.info(f"🤖 BOT RESPONSE: {bot_response}")
             return bot_response
