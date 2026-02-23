@@ -25,14 +25,9 @@ which python3
 # Install build headers if needed (for numpy source build in Python 3.13 in some environments)
 apt update && apt install -y python3-dev build-essential
 # Use only-binary orjson to avoid Rust compiler issues we saw earlier
-pip install --only-binary :all: orjson || true
-pip install pipecat-ai==0.0.67 --no-deps
-pip install openai==1.70.0 --no-deps
-pip install typer==0.15.1 --no-deps
-pip install click==8.1.8 --no-deps
-pip install pipecat-ai
-pip install agent-zero
-export ENVIRONMENT=prod;./run.sh
+cd /a0/usr/workdir/telegram_bot/;. .venv/bin/activate
+export ENVIRONMENT=prod;python3 agent_zero_telegram_bot.py
+./run.sh
 # stop the run
 exit
 # run in new session not dettach mode kill it when exit

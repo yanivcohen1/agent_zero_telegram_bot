@@ -14,7 +14,7 @@ logging.basicConfig(
 TOKEN = os.getenv("TELEGRAM_TOKEN", "8531898414:AAHe2o9A1Nb7Q3gd3m0PHKSV23tBjdTxOdU")
 MY_ID = int(os.getenv("MY_USER_ID", "6977408305"))
 OLLAMA_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3:1.7b")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "gemini-3-flash-preview:latest")
 ENVIRONMENT = os.getenv("ENVIRONMENT", "dev")
 PIC_DIR = "pic"
 if os.name != 'nt':
@@ -34,24 +34,51 @@ if ENVIRONMENT == "dev":
 else:
     import sys
     import os
-    
-    # Point to the directory containing agent.py
-    sys.path.insert(0, '/a0')
-    
-    try:
-        # This looks for 'agent.py' in /a0 and imports the 'Agent' class
-        from agent import Agent
-        print("✅ Success: Agent Zero framework loaded from /a0/agent.py")
-    except ImportError as e:
-        print(f"❌ Import failed. Error: {e}")
-        sys.exit(1)
-    # Now import the Ollama LLM wrapper from langchain-community
-    from langchain_community.llms import Ollama
-    logging.info("Running in PROD mode using Agent Zero.")
-    # 1. Initialize the LLM - Using local Ollama
-    llm = Ollama(model=OLLAMA_MODEL, base_url=OLLAMA_URL)
-    # 2. Initialize the Agent Zero Agent
-    agent = Agent(llm=llm, headless=True)
+
+    # Absolute paths to the framework root
+    FRAMEWORK_ROOT = "/a0"
+    PYTHON_HELPERS = "/a0/python"
+
+    # Insert them at the start of the path
+    if FRAMEWORK_ROOT not in sys.path:
+        sys.path.insert(0, FRAMEWORK_ROOT)
+    if PYTHON_HELPERS not in sys.path:
+        sys.path.insert(0, PYTHON_HELPERS)
+
+    # Now try the imports
+    import models
+    from models import ModelConfig, ModelType
+    from agent import AgentConfig, Agent
+
+    # Define a single config for all 'Chat-like' tasks
+    ollama_config = ModelConfig(
+        type=ModelType.CHAT,           # Use CHAT here
+        provider="ollama",
+        name=OLLAMA_MODEL, 
+        api_base=OLLAMA_URL
+    )
+
+    # Define the embedding config
+    embedding_config = ModelConfig(
+        type=ModelType.EMBEDDING,
+        provider="ollama", 
+        name="ollama/mxbai-embed-large:latest", # Explicit tag
+        api_base=OLLAMA_URL
+    )
+
+    # Create the master config
+    # Near the top of your script where you define 'config'
+    config = AgentConfig(
+        chat_model=ollama_config,
+        utility_model=ollama_config,   
+        embeddings_model=None, # Stay with None to avoid FAISS errors
+        browser_model=ollama_config,
+        mcp_servers=""
+    )
+
+    # Initialize the Agent
+    agent = Agent(number=1, config=config)
+    print("🚀 Agent Zero is fully initialized and ready!")
 
 def reset_session():
     global agent, dev_chat_history
@@ -61,27 +88,26 @@ def reset_session():
         if llm:
             agent = Agent(llm=llm, headless=True)
 
-def run_agent_sync(prompt: str, screenshot_path: str, is_scheduled: bool = False) -> str:
-    """Runs the agent synchronously. This is executed in a separate thread."""
-    global dev_chat_history, agent, llm
-    if ENVIRONMENT == "dev":
-        client = ollama.Client(host=OLLAMA_URL)
-        if is_scheduled:
-            # Run isolated, do not affect chat history
-            response = client.chat(model=OLLAMA_MODEL, messages=[{'role': 'user', 'content': prompt}])
-            return response['message']['content']
-        else:
-            dev_chat_history.append({'role': 'user', 'content': prompt})
-            response = client.chat(model=OLLAMA_MODEL, messages=dev_chat_history)
-            dev_chat_history.append({'role': 'assistant', 'content': response['message']['content']})
-            return response['message']['content']
-    else:
-        # Use a temporary agent for scheduled tasks to avoid messing with the main session
-        current_agent = Agent(llm=llm, headless=True) if is_scheduled else agent
-        result = current_agent.run(prompt)
-        if hasattr(current_agent, 'browser') and current_agent.browser:
-            current_agent.browser.page.screenshot(path=screenshot_path)
-        return result
+# Change the signature to accept 'agent_instance' as the second argument
+async def run_agent_sync(prompt, agent_instance=None, is_scheduled=False, screenshot_path=None):
+    # FALLBACK MODE: Direct Ollama call
+    # We do this because the Agent Zero framework is currently hitting 
+    # internal RFC/Tool errors that the 1.7b model can't handle.
+    try:
+        import ollama
+        logging.info(f"Using Direct Ollama fallback for prompt: {prompt}")
+        
+        client = ollama.AsyncClient(host=OLLAMA_URL)
+        response = await client.chat(model=OLLAMA_MODEL, messages=[
+            {'role': 'system', 'content': 'You are a helpful Telegram assistant.'},
+            {'role': 'user', 'content': prompt}
+        ])
+        
+        return response['message']['content']
+
+    except Exception as e:
+        logging.error(f"Critical Error in run_agent_sync: {e}")
+        return f"Sorry, I encountered an error: {str(e)}"
 
 async def process_agent_task(prompt: str, chat_id: int, context: ContextTypes.DEFAULT_TYPE, is_scheduled: bool = False):
     prefix = "⏰ Scheduled Task" if is_scheduled else "🚀 Task"
@@ -90,8 +116,8 @@ async def process_agent_task(prompt: str, chat_id: int, context: ContextTypes.DE
     try:
         screenshot_path = f"action_{chat_id}.png"
         
-        # Run the agent task in a separate thread to avoid blocking the Telegram bot event loop
-        result = await asyncio.to_thread(run_agent_sync, prompt, screenshot_path, is_scheduled)
+        # FIX: Await the async function directly instead of using to_thread
+        result = await run_agent_sync(prompt, agent, is_scheduled, screenshot_path)
 
         # Send the text response
         await context.bot.send_message(chat_id=chat_id, text=f"✅ {prefix} Completed!\n\nResponse:\n{result}")
