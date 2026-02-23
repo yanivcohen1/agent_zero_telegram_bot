@@ -93,7 +93,9 @@ async def run_agent_sync(
         if response.status_code == 200:
             data = response.json()
             if not is_scheduled:
-                context_id = data.get("context_id")
+                new_context_id = data.get("context_id")
+                if new_context_id:
+                    context_id = new_context_id
             bot_response = data.get("response", "I processed your message, but didn't generate a final text response.")
             logging.info(f"🤖 BOT RESPONSE: {bot_response}")
             return bot_response
