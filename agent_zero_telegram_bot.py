@@ -202,12 +202,29 @@ async def process_agent_task(
         # Send the downloaded images to the user
         for img_path in downloaded_images:
             if os.path.exists(img_path):
-                with open(img_path, "rb") as photo:
-                    await context.bot.send_photo(
-                        chat_id=chat_id,
-                        photo=photo,
-                        caption=f"Here is the image: {os.path.basename(img_path)}",
-                    )
+                try:
+                    with open(img_path, "rb") as photo:
+                        await context.bot.send_photo(
+                            chat_id=chat_id,
+                            photo=photo,
+                            caption=f"Here is the image: {os.path.basename(img_path)}",
+                        )
+                except Exception as e:
+                    logging.error(f"Failed to send photo {img_path}: {e}")
+                    # Fallback to sending as document if photo fails (e.g., due to dimensions)
+                    try:
+                        with open(img_path, "rb") as doc:
+                            await context.bot.send_document(
+                                chat_id=chat_id,
+                                document=doc,
+                                caption=f"Image sent as document due to size/dimension limits: {os.path.basename(img_path)}",
+                            )
+                    except Exception as doc_e:
+                        logging.error(f"Failed to send document {img_path}: {doc_e}")
+                        await context.bot.send_message(
+                            chat_id=chat_id,
+                            text=f"❌ Could not send the image '{os.path.basename(img_path)}'. It might be too large or have invalid dimensions."
+                        )
 
         # Send the screenshot to the user if it exists
 
