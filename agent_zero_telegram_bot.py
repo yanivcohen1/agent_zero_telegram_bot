@@ -24,25 +24,23 @@ logging.basicConfig(
 # Fetch settings from environment variables (defined in docker-compose.yml)
 TOKEN = os.getenv("TELEGRAM_TOKEN", "8531898414:AAHe2o9A1Nb7Q3gd3m0PHKSV23tBjdTxOdU")
 MY_ID = int(os.getenv("MY_USER_ID", "6977408305"))
-OLLAMA_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3:1.7b")
 ENVIRONMENT = os.getenv("ENVIRONMENT", "dev")
 PIC_DIR = "pic"
-
-if os.name != "nt":
-    # Linux/Mac
-    logging.info("Running in Linux.")
-    OLLAMA_URL = "http://host.docker.internal:11434"
-
-# Ensure the pictures directory exists
-os.makedirs(PIC_DIR, exist_ok=True)
-
 
 # Agent Zero API Settings
 AGENT_ZERO_URL = os.getenv("AGENT_ZERO_URL", "http://localhost:5000")
 AGENT_ZERO_API_KEY = os.getenv(
     "AGENT_ZERO_API_KEY", "EgfPROzPNm3Soxf3"
 )  # Find this in Agent Zero Settings > External Services
+
+if os.name != "nt":
+    # Linux/Mac
+    logging.info("Running in Linux.")
+    if "AGENT_ZERO_URL" not in os.environ:
+        AGENT_ZERO_URL = "http://host.docker.internal:5000"
+
+# Ensure the pictures directory exists
+os.makedirs(PIC_DIR, exist_ok=True)
 
 context_id = None
 
@@ -445,8 +443,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message.from_user.id != MY_ID:
         return
     logging.info(f"📜 COMMAND [Help] from {update.message.from_user.first_name}")
-    # Properly escape OLLAMA_MODEL and ENVIRONMENT for MarkdownV2
-    safe_model = OLLAMA_MODEL.replace("-", "\\-").replace(".", "\\.")
+    # Properly escape ENVIRONMENT for MarkdownV2
     safe_env = ENVIRONMENT.replace("-", "\\-").replace(".", "\\.")
     help_text = (
         "🤖 *OpenClaw/Agent Zero Bot Help*\n\n"
@@ -460,9 +457,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/schedules \\- List all running schedules\\.\n"
         "/help \\- Show this information\\.\n\n"
         "*Features:*\n"
-        "• *Chatting:* Simply send any text message to get a response from the model \\(`"
-        + safe_model
-        + "`\\)\\.\n"
+        "• *Chatting:* Simply send any text message to get a response from Agent Zero\\.\n"
         "• *Storing Photos:* Send a photo to the bot to save it\\. If you provide a caption, the photo will be saved with that name \\(e\\.g\\., `my_document`\\)\\. The photo will also be sent to Agent Zero for analysis\\.\n"
         "• *Retrieving Photos:* Type `get pic \\<filename\\>` to have the bot send a saved photo back to you\\.\n\n"
         "Current Mode: `" + safe_env + "`"
@@ -494,7 +489,6 @@ def main():
     # Handle the help command
     application.add_handler(CommandHandler("help", help_command))
     logging.info(f"Bot started successfully for authorized user: {MY_ID}")
-    logging.info(f"Using Ollama Model: {OLLAMA_MODEL} at {OLLAMA_URL}")
     logging.info(f"Environment: {ENVIRONMENT}")
     # Start the bot
     application.run_polling()
