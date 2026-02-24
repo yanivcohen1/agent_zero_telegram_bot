@@ -1,7 +1,7 @@
 # How to use it
 
 ## How it's work:
-ברגע שהקונטיינר של ה-Docker רץ, הוא הופך ל"מנוע" שמחבר בין **OpenClaw** לבין השרתים של **Telegram**. התקשורת עצמה מתבצעת בשני כיוונים, והנה איך זה נראה בפועל:
+ברגע שהקונטיינר של ה-Docker רץ, הוא הופך ל"מנוע" שמחבר בין **AgenZero** לבין השרתים של **Telegram**. התקשורת עצמה מתבצעת בשני כיוונים, והנה איך זה נראה בפועל:
 
 ### 1. השלב הראשון: יצירת הבוט בטלגרם (אם עוד לא עשית זאת)
 
@@ -47,7 +47,7 @@ environment:
 
 ### 3. איך אתה מדבר איתו עכשיו?
 
-ברגע שהקונטיינר רץ והלוגים שלו מראים שהוא התחבר בהצלחה (אתה יכול לבדוק עם `docker logs openclaw_telegram_bot`), בצע את הפעולות הבאות:
+ברגע שהקונטיינר רץ והלוגים שלו מראים שהוא התחבר בהצלחה (אתה יכול לבדוק עם `docker logs agent_zero_telegram_bot`), בצע את הפעולות הבאות:
 
 1. פתח את אפליקציית טלגרם בטלפון או במחשב.
 2. חפש את הבוט שיצרת לפי שם המשתמש שלו (למשל `@YourName_bot`).
@@ -63,7 +63,7 @@ environment:
 1. **אתה (טלגרם):** שולח הודעה לשרתים של טלגרם.
 2. **ה-Docker (קוד הבוט):** הקונטיינר שלך פונה לשרתים של טלגרם (בשיטה שנקראת Polling) ושואל: "יש הודעות חדשות עבורי?".
 3. **העיבוד:** הקוד מקבל את ההודעה, שולח אותה ל-**Ollama** (שנמצא מחוץ ל-Docker) כדי להבין מה לעשות.
-4. **הפעולה:** **OpenClaw** פותח דפדפן (בתוך ה-Docker), מבצע את המשימה, ומצלם מסך.
+4. **הפעולה:** **AgenZero** פותח דפדפן (בתוך ה-Docker), מבצע את המשימה, ומצלם מסך.
 5. **התגובה:** הבוט שולח את התשובה ואת התמונה חזרה לשרתים של טלגרם, ואתה רואה אותם בטלפון.
 
 ---
@@ -75,7 +75,7 @@ environment:
 1. **בדוק שהקונטיינר חי:** `docker ps`
 2. **צפה בלוגים בזמן אמת:**
 ```bash
-docker logs -f openclaw_telegram_bot
+docker logs -f agent_zero_telegram_bot
 
 ```
 
@@ -91,14 +91,14 @@ Yan, [19-Feb-26 13:24]
 
 // reciving
 @Yaniv_bot, [19-Feb-26 13:24]
-OpenClaw: access not configured.
+AgenZero: access not configured.
 
 Your Telegram user id: 6977408305
 
 Pairing code: ZADX65W4
 
 Ask the bot owner to approve with:
-openclaw pairing approve telegram ZADX65W4
+AgenZero pairing approve telegram ZADX65W4
 
 ---
 
