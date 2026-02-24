@@ -442,11 +442,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(help_text, parse_mode="MarkdownV2")
 
 
-def main():
-    # Verify environment variables are present
-    if not TOKEN or MY_ID == 0:
-        logging.error("TELEGRAM_TOKEN or MY_USER_ID environment variables are missing!")
-        return
+def create_app():
     # Build the Telegram Application
     application = Application.builder().token(TOKEN).build()
     # Handle text messages (excluding commands)
@@ -465,6 +461,14 @@ def main():
     application.add_handler(CommandHandler("restart", restart_command))
     # Handle the help command
     application.add_handler(CommandHandler("help", help_command))
+    return application
+
+def main():
+    # Verify environment variables are present
+    if not TOKEN or MY_ID == 0:
+        logging.error("TELEGRAM_TOKEN or MY_USER_ID environment variables are missing!")
+        return
+    application = create_app()
     logging.info(f"Bot started successfully for authorized user: {MY_ID}")
     logging.info(f"Environment: {ENVIRONMENT}")
     # Start the bot
