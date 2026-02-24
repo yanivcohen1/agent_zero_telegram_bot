@@ -87,15 +87,15 @@ Yan, [19-Feb-26 13:24]
 /start
 
 // reciving
-@Yaniv_bot, [19-Feb-26 13:24]
+@User_bot, [19-Feb-26 13:24]
 AgenZero: access not configured.
 
-Your Telegram user id: 6977408305
+Your Telegram user id: 1234567890
 
-Pairing code: ZADX65W4
+Pairing code: ABCDEFGH
 
 Ask the bot owner to approve with:
-AgenZero pairing approve telegram ZADX65W4
+AgenZero pairing approve telegram ABCDEFGH
 
 ---
 
