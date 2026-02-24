@@ -1,10 +1,11 @@
 import os
 import asyncio
 import logging
-import requests
-import uuid
 import re
 import base64
+import requests
+from dotenv import load_dotenv
+# import uuid
 from telegram import Update
 from telegram.ext import (
     Application,
@@ -14,24 +15,22 @@ from telegram.ext import (
     ContextTypes,
 )
 
+load_dotenv()
 
 # Configure logging to see events in 'docker logs'
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
 )
 
-
-# Fetch settings from environment variables (defined in docker-compose.yml)
-TOKEN = os.getenv("TELEGRAM_TOKEN", "8531898414:AAHe2o9A1Nb7Q3gd3m0PHKSV23tBjdTxOdU")
-MY_ID = int(os.getenv("MY_USER_ID", "6977408305"))
+# Fetch settings from environment variables (defined in docker-compose.yml or .env)
+TOKEN = os.getenv("TELEGRAM_TOKEN")
+MY_ID = int(os.getenv("MY_USER_ID", "0"))
 ENVIRONMENT = os.getenv("ENVIRONMENT", "dev")
 PIC_DIR = "pic"
 
 # Agent Zero API Settings
 AGENT_ZERO_URL = os.getenv("AGENT_ZERO_URL", "http://localhost:5000")
-AGENT_ZERO_API_KEY = os.getenv(
-    "AGENT_ZERO_API_KEY", "EgfPROzPNm3Soxf3"
-)  # Find this in Agent Zero Settings > External Services
+AGENT_ZERO_API_KEY = os.getenv("AGENT_ZERO_API_KEY")  # Find this in Agent Zero Settings > External Services
 
 if os.name != "nt":
     # Linux/Mac
@@ -41,7 +40,6 @@ if os.name != "nt":
 
 # Ensure the pictures directory exists
 os.makedirs(PIC_DIR, exist_ok=True)
-
 context_id = None
 
 
@@ -56,11 +54,8 @@ async def run_agent_sync(
 ):
 
     global context_id
-
     try:
-
         headers = {"Content-Type": "application/json", "X-API-KEY": AGENT_ZERO_API_KEY}
-
         payload = {"message": prompt, "lifetime_hours": 24}
         if attachments:
             payload["attachments"] = attachments
@@ -74,13 +69,10 @@ async def run_agent_sync(
             json=payload,
             headers=headers,
         )
-
         if response.status_code == 200:
             data = response.json()
-
             # LOG THE FULL RESPONSE TO SEE WHAT AGENT ZERO IS ACTUALLY SENDING
             logging.info(f"RAW API RESPONSE: {data}")
-
             if not is_scheduled:
                 # Try multiple possible keys that Agent Zero might be using for the ID
                 new_context_id = (
@@ -89,7 +81,6 @@ async def run_agent_sync(
                     or data.get("session_id")
                     or data.get("chat_id")
                 )
-
                 if new_context_id:
                     context_id = new_context_id
                     logging.info(f"Updated context_id to: {context_id}")
@@ -97,21 +88,16 @@ async def run_agent_sync(
                     logging.warning(
                         "WARNING: Could not find any ID in the Agent Zero response!"
                     )
-
             bot_response = data.get(
                 "response",
                 "I processed your message, but didn't generate a final text response.",
             )
             logging.info(f"🤖 BOT RESPONSE: {bot_response}")
-
             # Extract image paths from the response
             image_paths = re.findall(r"!\[.*?\]\((.*?)\)", bot_response)
-
             # Clean up paths (remove img:// prefix if present)
             cleaned_paths = [path.replace("img://", "") for path in image_paths]
-
             downloaded_images = []
-
             if cleaned_paths:
                 logging.info(f"Found image paths in response: {cleaned_paths}")
                 try:
@@ -121,7 +107,6 @@ async def run_agent_sync(
                         json={"paths": cleaned_paths},
                         headers=headers,
                     )
-
                     if files_response.status_code == 200:
                         files_data = files_response.json()
                         for filename, base64_content in files_data.items():
@@ -146,10 +131,8 @@ async def run_agent_sync(
                         )
                 except Exception as e:
                     logging.error(f"Error fetching images from Agent Zero: {e}")
-
             # Remove the markdown image links from the text response so they don't show up as broken links in Telegram
             clean_bot_response = re.sub(r"!\[.*?\]\(.*?\)", "", bot_response).strip()
-
             return clean_bot_response, downloaded_images
         else:
             error_msg = f"API Error {response.status_code}: {response.text}"
@@ -290,7 +273,6 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         with open(full_path, "rb") as f:
             base64_content = base64.b64encode(f.read()).decode("utf-8")
-
         attachments = [{"filename": filename, "base64": base64_content}]
         prompt = (
             update.message.caption
@@ -353,7 +335,6 @@ async def schedule_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(
             f"✅ Scheduled task '{name}' added! Will run '{prompt}' every {interval} seconds."
         )
-
     except (IndexError, ValueError):
         await update.message.reply_text("Usage: /schedule <name> <seconds> <prompt>")
 

@@ -6,10 +6,10 @@ services:
     volumes:
       - .:/app
       - /app/node_modules
+    env_file:
+      - .env
     environment:
-      - TELEGRAM_TOKEN=8197057846:AAFvJg7eVDjKxBXPnnAjKRGwdaq6o4mTLqg
       - OLLAMA_BASE_URL=http://host.docker.internal:11434
-      - MY_USER_ID=6977408305
       - OPENAI_API_KEY=
     extra_hosts:
       - "host.docker.internal:host-gateway"
