@@ -118,15 +118,11 @@ You can also:
 - Type `get pic <filename>` to retrieve a saved photo.
 
 # Docker
-docker-compose up -d --force-recreate
+- docker-compose up -d --force-recreate
+- docker-compose stop
+- docker-compose staet
+- docker-compose logs -f
+- Test-NetConnection 127.0.0.1 -Port 5000
 
-docker-compose stop
-
-docker-compose staet
-
-docker-compose logs -f
-
-Test-NetConnection 127.0.0.1 -Port 5000
-
-// the AgenZero website
-http://localhose:5000
+## AgenZero website
+http://localhost:5000
