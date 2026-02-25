@@ -9,6 +9,7 @@ services:
     command: >
       sh -c "
         apk add --no-cache iptables &&
+        iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT &&
         iptables -A OUTPUT -d 192.168.0.155 -p tcp --dport 11434 -j ACCEPT &&
         iptables -A OUTPUT -d 192.168.0.0/16 -j DROP &&
         iptables -A OUTPUT -d 10.0.0.0/8 -j DROP &&
