@@ -119,5 +119,14 @@ You can also:
 
 # Docker
 docker-compose up -d --force-recreate
+
+docker-compose stop
+
+docker-compose staet
+
+docker-compose logs -f
+
 Test-NetConnection 127.0.0.1 -Port 5000
-Test-NetConnection 127.0.0.1 -Port 11434
+
+// the AgenZero website
+http://localhose:5000
