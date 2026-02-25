@@ -20,7 +20,7 @@ services:
 
   agent-zero:
     image: agent0ai/agent-zero:latest
-    container_name: agent-zero
+    container_name: agent-zero-isolated
     network_mode: "service:firewall"
     depends_on:
       - firewall

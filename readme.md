@@ -116,3 +116,7 @@ You can also:
 - Send any text message to chat with the bot.
 - Send a photo to save it (use the caption as the filename).
 - Type `get pic <filename>` to retrieve a saved photo.
+
+# Docker
+docker-compose up -d --force-recreate
+localhost:5000
