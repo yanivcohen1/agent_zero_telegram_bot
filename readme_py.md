@@ -15,15 +15,20 @@ py agent_zero_telegram_bot.py
 
 # bot RUN
 /a0/usr/workdir/telegram_bot/agent_zero_telegram_bot.py.
-docker cp .\agent_zero_telegram_bot.py agent-zero:/a0/usr/workdir/telegram_bot/
+docker cp ./agent_zero_telegram_bot.py agent-zero-isolated:/a0/usr/workdir/telegram_bot/
 # run in new session not dettach mode kill it when exit
-docker exec -it agent-zero /bin/bash
+docker exec -it agent-zero-isolated /bin/bash
 cd /a0/usr/workdir/telegram_bot/
 chmod +x run.sh
+./run.sh
+// or manualy
 . .venv/bin/activate
 which python3
 # Install build headers if needed (for numpy source build in Python 3.13 in some environments)
 apt update && apt install -y python3-dev build-essential
+python3 -m venv .venv
+source .venv/bin/activate
+python3 -m pip install -r requirements.txt
 # Use only-binary orjson to avoid Rust compiler issues we saw earlier
 cd /a0/usr/workdir/telegram_bot/;. .venv/bin/activate
 export ENVIRONMENT=prod;python3 agent_zero_telegram_bot.py
@@ -31,8 +36,8 @@ export ENVIRONMENT=prod;python3 agent_zero_telegram_bot.py
 # stop the run
 exit
 # run in new session not dettach mode kill it when exit
-docker exec -e ENVIRONMENT=prod -d agent-zero ./run.sh
-docker logs -f agent-zero
+docker exec -e ENVIRONMENT=prod -d agent-zero-isolated ./run.sh
+docker logs -f agent-zero-isolated
 ---
 
 ## Bot Commands

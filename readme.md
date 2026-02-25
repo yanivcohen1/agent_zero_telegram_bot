@@ -119,4 +119,5 @@ You can also:
 
 # Docker
 docker-compose up -d --force-recreate
-localhost:5000
+Test-NetConnection 127.0.0.1 -Port 5000
+Test-NetConnection 127.0.0.1 -Port 11434

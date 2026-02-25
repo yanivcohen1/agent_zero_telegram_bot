@@ -36,7 +36,7 @@ if os.name != "nt":
     # Linux/Mac
     logging.info("Running in Linux.")
     if "AGENT_ZERO_URL" not in os.environ:
-        AGENT_ZERO_URL = "http://host.docker.internal:5000"
+        AGENT_ZERO_URL = "http://localhost:80"
 
 # Ensure the pictures directory exists
 os.makedirs(PIC_DIR, exist_ok=True)
