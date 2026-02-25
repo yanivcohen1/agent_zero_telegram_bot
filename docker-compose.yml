@@ -1,16 +1,27 @@
-version: '3.8'
 services:
-  openclaw-bot:
-    build: .
-    container_name: openclaw_telegram_bot
-    volumes:
-      - .:/app
-      - /app/node_modules
-    env_file:
-      - .env
+  firewall:
+    image: alpine:latest
+    container_name: agent-zero-firewall
+    cap_add:
+      - NET_ADMIN
+    ports:
+      - "5000:80"
+    command: >
+      sh -c "
+        apk add --no-cache iptables &&
+        iptables -A OUTPUT -d 192.168.0.155 -p tcp --dport 11434 -j ACCEPT &&
+        iptables -A OUTPUT -d 192.168.0.0/16 -j DROP &&
+        iptables -A OUTPUT -d 10.0.0.0/8 -j DROP &&
+        iptables -A OUTPUT -d 172.16.0.0/12 -j DROP &&
+        echo 'Firewall rules applied successfully.' &&
+        tail -f /dev/null
+      "
+
+  agent-zero:
+    image: agent0ai/agent-zero:latest
+    container_name: agent-zero
+    network_mode: "service:firewall"
+    depends_on:
+      - firewall
     environment:
-      - OLLAMA_BASE_URL=http://host.docker.internal:11434
-      - OPENAI_API_KEY=
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    restart: always
+      - OLLAMA_URL=http://192.168.0.155:11434
