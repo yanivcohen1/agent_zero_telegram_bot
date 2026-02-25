@@ -120,7 +120,7 @@ You can also:
 # Docker
 - docker-compose up -d --force-recreate
 - docker-compose stop
-- docker-compose staet
+- docker-compose start
 - docker-compose logs -f
 - Test-NetConnection 127.0.0.1 -Port 5000
 
