@@ -21,6 +21,8 @@ load_dotenv()
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
 )
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
 
 # Fetch settings from environment variables (defined in docker-compose.yml or .env)
 TOKEN = os.getenv("TELEGRAM_TOKEN")
