@@ -6,6 +6,6 @@ python-telegram-bot
 # langchain-ollama
 # ollama
 requests
-# python-dotenv
+python-dotenv
 pytest
 pytest-asyncio
