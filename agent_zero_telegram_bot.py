@@ -34,11 +34,6 @@ PIC_DIR = "pic"
 AGENT_ZERO_URL = os.getenv("AGENT_ZERO_URL", "http://localhost:5000")
 AGENT_ZERO_API_KEY = os.getenv("AGENT_ZERO_API_KEY")  # Find this in Agent Zero Settings > External Services
 
-if os.name != "nt":
-    # Linux/Mac
-    logging.info("Running in Linux.")
-    AGENT_ZERO_URL = "http://localhost:80"
-
 # Ensure the pictures directory exists
 os.makedirs(PIC_DIR, exist_ok=True)
 context_id = None

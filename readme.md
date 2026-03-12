@@ -1,108 +1,60 @@
-# How to use it
+# Agent-Zero Telegram Bot
 
-## How it's work:
-ברגע שהקונטיינר של ה-Docker רץ, הוא הופך ל"מנוע" שמחבר בין **AgenZero** לבין השרתים של **Telegram**. התקשורת עצמה מתבצעת בשני כיוונים, והנה איך זה נראה בפועל:
+A Telegram bot interface designed to work side-by-side with [Agent-Zero](https://github.com/agent0ai). This project spins up a multi-container Docker environment containing an isolated Agent-Zero instance and a connected Telegram Bot.
 
-### 1. השלב הראשון: יצירת הבוט בטלגרם (אם עוד לא עשית זאת)
+## Architecture
 
-כדי שהקוד בתוך ה-Docker ידע לאן לשלוח הודעות, אתה צריך "כתובת" (Token):
-
-1. חפש בטלגרם את המשתמש **`@BotFather`**.
-2. שלח לו את הפקודה `/newbot`.
-3. בחר שם לבוט (למשל: `@YourName_bot`) ושם משתמש (חייב להסתיים ב-`_bot`).
-4. הוא ישלח לך הודעה עם ה-**HTTP API Token** (מחרוזת ארוכה של תווים). זה המפתח שלך.
+The system runs using `docker-compose` and spinning up three intertwined containers:
+1. **Firewall**: Alpine-based network admin restricting external API calls and keeping Agent-Zero secure.
+2. **Agent-Zero**: The AI agent executing tasks (`agent0ai/agent-zero:latest`), communicating via the firewall network.
+3. **Bot**: The Python Telegram Bot listening to your Telegram messages and dispatching them to Agent-Zero over the internal network.
 
 ---
 
-### 2. הזנת המפתח ל-Docker
+## 🛠️ How to Build & Setup
 
-בתוך קובץ ה-`docker-compose.yml` שכתבנו קודם, יש שורה של `environment`. אתה צריך להדביק שם את הטוקן שקיבלת:
+### 1. Prerequisites
+- [Docker](https://www.docker.com/) and `docker-compose` installed.
+- A Telegram Bot Token. 
+  - Go to Telegram and message **[@BotFather](https://t.me/BotFather)**.
+  - Send `/newbot`, give it a name and a username.
+  - Copy the **HTTP API Token** provided.
+- Your Telegram User ID.
+  - Go to **[@userinfobot](https://t.me/userinfobot)** on Telegram and click Start. The bot will reply with your ID (a 9-10 digit number).
 
-```yaml
-environment:
-  - TELEGRAM_TOKEN=1234567890:ABCdefGHiJkLmNoPqRsTuVwXyZ # הטוקן מה-BotFather
+### 2. Configure Environment `.env`
+Create a `.env` file in the root directory (alongside `docker-compose.yml`) to securely store your credentials without modifying the YAML files:
 
+```ini
+TELEGRAM_TOKEN=1234567890:ABCdefGHiJkLmNoPqRsTuVwXyZ
+MY_USER_ID=1234567890
+AGENT_ZERO_API_KEY=your_agent_zero_api_key_here
 ```
+*(Optional: Provide an explicitly generated API key from Agent-Zero's External Services settings if needed.)*
 
-#### מציאת ה ID
-כך תמצא את ה-ID שלך:
-חפש בטלגרם את הבוט: @userinfobot (יש לו בדרך כלל תמונה של איש עם סימן שאלה).
+### 3. Build & Run
+Open your terminal in the project directory where the `docker-compose.yml` is located and run:
 
-לחץ על Start.
-
-הבוט ישלח לך מיד הודעה עם ה-Id שלך (מספר ארוך של 9-10 ספרות).
-
-
-```yaml
-environment:
-  - MY_USER_ID=1234567890 # id from @userinfobot
-
-```
-
-לאחר שעדכנת, הרץ שוב:
-`docker-compose up -d`
-
----
-
-### 3. איך אתה מדבר איתו עכשיו?
-
-ברגע שהקונטיינר רץ והלוגים שלו מראים שהוא התחבר בהצלחה (אתה יכול לבדוק עם `docker logs agent_zero_telegram_bot`), בצע את הפעולות הבאות:
-
-1. פתח את אפליקציית טלגרם בטלפון או במחשב.
-2. חפש את הבוט שיצרת לפי שם המשתמש שלו (למשל `@YourName_bot`).
-3. לחץ על **Start**.
-4. **שלח הודעה:** למשל, *"תבדוק מה הטמפרטורה עכשיו בתל אביב"*.
-
----
-
-### 4. מה קורה "מתחת למכסה המנוע"? (מסלול ההודעה)
-
-כדי שתבין מה קורה ואיפה זה עלול להיתקע:
-
-1. **אתה (טלגרם):** שולח הודעה לשרתים של טלגרם.
-2. **ה-Docker (קוד הבוט):** הקונטיינר שלך פונה לשרתים של טלגרם (בשיטה שנקראת Polling) ושואל: "יש הודעות חדשות עבורי?".
-   
-3. **הפעולה:** **AgenZero** פותח דפדפן (בתוך ה-Docker), מבצע את המשימה, ומצלם מסך.
-4. **התגובה:** הבוט שולח את התשובה ואת התמונה חזרה לשרתים של טלגרם, ואתה רואה אותם בטלפון.
-
----
-
-### טיפ לפתרון בעיות (Debugging)
-
-אם שלחת הודעה והבוט לא עונה:
-
-1. **בדוק שהקונטיינר חי:** `docker ps`
-2. **צפה בלוגים בזמן אמת:**
 ```bash
-docker logs -f agent_zero_telegram_bot
-
+docker-compose up -d --build --force-recreate
 ```
 
-
-**האם הצלחת להוציא את הטוקן מה-BotFather, או שנתקלת בבעיה בשלב הזה?**
-
-## How to Pairing
-// sending
-Yan, [19-Feb-26 13:24]
-/start
-
-// reciving
-@User_bot, [19-Feb-26 13:24]
-AgenZero: access not configured.
-
-Your Telegram user id: 1234567890
-
-Pairing code: ABCDEFGH
-
-Ask the bot owner to approve with:
-AgenZero pairing approve telegram ABCDEFGH
+This will:
+- Spin up the firewall container.
+- Download and run the `agent-zero` container.
+- Build dependencies inside the `bot` container natively on startup and connect to Telegram.
 
 ---
 
-## Bot Commands
+## 🤖 How to Use It
 
-The bot supports the following commands:
+Once your containers are running, you can connect to your bot:
+1. Open the **Telegram application**.
+2. Search for your bot using its `@Username`.
+3. Click **Start**.
+4. **Send a message:** Type whatever you'd like your agent to research or do (e.g., *"Check the weather today in New York"*).
 
+### Available Commands
 - `/help` - Show the help menu with all available commands and features.
 - `/new` - Start a new session (clear conversation history).
 - `/stop` - Stop the current conversation (this does NOT affect schedules).
@@ -117,12 +69,29 @@ You can also:
 - Send a photo to save it (use the caption as the filename).
 - Type `get pic <filename>` to retrieve a saved photo.
 
-# Docker
-- docker-compose up -d --force-recreate
-- docker-compose stop
-- docker-compose start
-- docker-compose logs -f
-- Test-NetConnection 127.0.0.1 -Port 5000
+---
 
-## AgenZero website
-http://localhost:5000
+## 🔍 Troubleshooting (Debugging)
+
+If the setup fails or the bot isn't responding, utilize Docker's logging features:
+
+1. **Check if containers are running:**
+```bash
+docker ps
+```
+2. **View live logs for the Telegram Bot:**
+```bash
+docker logs -f agent-zero-telegram-bot
+```
+3. **View live logs for Agent-Zero:**
+```bash
+docker logs -f agent-zero-isolated
+```
+4. **Rerstart container**
+```bash
+Container agent-zero-telegram-bot Restarting
+```
+
+## Agent-Zero website
+You can also manually access the Agent-Zero web UI locally:
+[http://localhost:5000](http://localhost:5000)
