@@ -91,6 +91,10 @@ docker logs -f agent-zero-isolated
 ```bash
 Container agent-zero-telegram-bot Restarting
 ```
+5. **Stack commands**
+```bash
+docker-compose stop/start/restart/up -d
+```
 
 ## Agent-Zero website
 You can also manually access the Agent-Zero web UI locally:
