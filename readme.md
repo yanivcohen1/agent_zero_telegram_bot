@@ -95,19 +95,17 @@ Container agent-zero-telegram-bot Restarting
 ```bash
 docker-compose stop/start/restart/up -d
 ```
-6. **pull update Agent**
-```bash
-docker pull agent0ai/agent-zero:latest
-```
-7. **Create backup from OLD instance (localhost:50080)**
+6. **Create backup from OLD instance (localhost:50080)**
 # Use the UI: Settings → Backup & Restore → Create Backup
 
-8. **Restore to NEW instance (localhost:50081)**
+7. **update Agent**
 ```bash
+docker pull agent0ai/agent-zero:latest
 docker-compose up -d
 ```
-# Use the UI: Settings → Backup & Restore → Restore
 
+8. **Restore to NEW instance (localhost:50081)**
+# Use the UI: Settings → Backup & Restore → Restore
 
 ## Agent-Zero website
 You can also manually access the Agent-Zero web UI locally:
