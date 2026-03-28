@@ -58,10 +58,9 @@ async def run_agent_sync(
         if context_id and not is_scheduled:
             payload["context_id"] = context_id
             logging.info(f"Sending request with context_id: {context_id}")
-        # Run the synchronous requests.post in a separate thread to avoid blocking the async event loop
         response = await asyncio.to_thread(
             requests.post,
-            f"{AGENT_ZERO_URL}/api_message",
+            f"{AGENT_ZERO_URL}/api/api_message",
             json=payload,
             headers=headers,
         )
@@ -99,7 +98,7 @@ async def run_agent_sync(
                 try:
                     files_response = await asyncio.to_thread(
                         requests.post,
-                        f"{AGENT_ZERO_URL}/api_files_get",
+                        f"{AGENT_ZERO_URL}/api/api_files_get",
                         json={"paths": cleaned_paths},
                         headers=headers,
                     )
