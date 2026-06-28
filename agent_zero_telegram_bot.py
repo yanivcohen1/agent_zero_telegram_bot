@@ -1,4 +1,5 @@
 import os
+import sys
 import asyncio
 import logging
 import re
@@ -39,8 +40,25 @@ os.makedirs(PIC_DIR, exist_ok=True)
 context_id = None
 
 
-def reset_session():
+async def reset_session():
     global context_id
+    if context_id:
+        try:
+            headers = {"Content-Type": "application/json", "X-API-KEY": AGENT_ZERO_API_KEY}
+            response = await asyncio.to_thread(
+                requests.post,
+                f"{AGENT_ZERO_URL}/api/api_terminate_chat",
+                json={"context_id": context_id},
+                headers=headers,
+            )
+            if response.status_code == 200:
+                logging.info(f"Successfully terminated session {context_id} on Agent Zero.")
+            else:
+                logging.warning(
+                    f"Failed to terminate session {context_id} on Agent Zero. Status: {response.status_code}"
+                )
+        except Exception as e:
+            logging.error(f"Error terminating session on Agent Zero: {e}")
     context_id = None
     logging.info("Session reset. Context ID cleared.")
 
@@ -384,7 +402,7 @@ async def new_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message.from_user.id != MY_ID:
         return
     logging.info(f"📜 COMMAND [New] from {update.message.from_user.first_name}")
-    reset_session()
+    await reset_session()
     await update.message.reply_text(
         "✨ New session started. Conversation history cleared."
     )
@@ -395,7 +413,7 @@ async def stop_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message.from_user.id != MY_ID:
         return
     logging.info(f"📜 COMMAND [Stop] from {update.message.from_user.first_name}")
-    reset_session()
+    await reset_session()
     await update.message.reply_text("🛑 Conversation stopped and session cleared.")
 
 
@@ -404,7 +422,7 @@ async def restart_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message.from_user.id != MY_ID:
         return
     logging.info(f"📜 COMMAND [Restart] from {update.message.from_user.first_name}")
-    reset_session()
+    await reset_session()
     await update.message.reply_text(
         "🔄 Session restarted. Ready for a new conversation."
     )
@@ -458,7 +476,29 @@ def create_app():
     application.add_handler(CommandHandler("help", help_command))
     return application
 
+async def run_test_message():
+    logging.info("Running direct message test...")
+    logging.info("Sending 'Hi' to Agent Zero...")
+    result, downloaded_images = await run_agent_sync("Hi")
+    print("\n--- TEST RESPONSE FROM AGENT ZERO ---")
+    print(result)
+    print("-------------------------------------")
+    if downloaded_images:
+        print(f"Downloaded images: {downloaded_images}")
+
 def main():
+    # If '--test' is passed, run the test message instead of starting the Telegram bot
+    if len(sys.argv) > 1 and sys.argv[1] == "--test":
+        # Load test API key if available in process environment, otherwise use what's loaded from .env
+        global AGENT_ZERO_API_KEY, AGENT_ZERO_URL
+        if not AGENT_ZERO_API_KEY:
+            AGENT_ZERO_API_KEY = "30ClzEm2JZwdATNh"
+        if AGENT_ZERO_URL == "http://localhost:5000" or not AGENT_ZERO_URL:
+            AGENT_ZERO_URL = "http://192.168.0.155:5000"
+        
+        asyncio.run(run_test_message())
+        return
+
     # Verify environment variables are present
     if not TOKEN or MY_ID == 0:
         logging.error("TELEGRAM_TOKEN or MY_USER_ID environment variables are missing!")

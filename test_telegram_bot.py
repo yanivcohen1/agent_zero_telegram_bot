@@ -7,6 +7,12 @@ from telegram.ext import ContextTypes
 # Import the handlers from the bot script
 import agent_zero_telegram_bot as bot
 
+@pytest.fixture(autouse=True)
+def reset_bot_context():
+    bot.context_id = None
+    yield
+    bot.context_id = None
+
 @pytest.fixture
 def mock_update():
     update = MagicMock(spec=Update)
@@ -156,45 +162,69 @@ async def test_help_command(mock_update, mock_context):
     assert "OpenClaw/Agent Zero Bot Help" in response_text
 
 @pytest.mark.asyncio
-async def test_new_command(mock_update, mock_context):
+@patch('agent_zero_telegram_bot.requests.post')
+async def test_new_command(mock_post, mock_update, mock_context):
+    bot.context_id = "test-session-123"
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_post.return_value = mock_response
+
     test_message = "/new"
     print(f"\n[TEST] Sending command: '{test_message}'")
     await run_and_await_tasks(bot.new_command(mock_update, mock_context))
     
+    mock_post.assert_called_once()
+    args, kwargs = mock_post.call_args
+    assert "api_terminate_chat" in args[0]
+    assert kwargs["json"]["context_id"] == "test-session-123"
+
     mock_update.message.reply_text.assert_awaited_once_with(
         "✨ New session started. Conversation history cleared."
     )
-    args, kwargs = mock_update.message.reply_text.call_args
-    response_text = kwargs.get('text', args[0] if args else '')
-    print(f"\n[TEST] Received response: '{response_text}'")
     assert bot.context_id is None
 
 @pytest.mark.asyncio
-async def test_stop_command(mock_update, mock_context):
+@patch('agent_zero_telegram_bot.requests.post')
+async def test_stop_command(mock_post, mock_update, mock_context):
+    bot.context_id = "test-session-123"
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_post.return_value = mock_response
+
     test_message = "/stop"
     print(f"\n[TEST] Sending command: '{test_message}'")
     await run_and_await_tasks(bot.stop_command(mock_update, mock_context))
     
+    mock_post.assert_called_once()
+    args, kwargs = mock_post.call_args
+    assert "api_terminate_chat" in args[0]
+    assert kwargs["json"]["context_id"] == "test-session-123"
+
     mock_update.message.reply_text.assert_awaited_once_with(
         "🛑 Conversation stopped and session cleared."
     )
-    args, kwargs = mock_update.message.reply_text.call_args
-    response_text = kwargs.get('text', args[0] if args else '')
-    print(f"\n[TEST] Received response: '{response_text}'")
     assert bot.context_id is None
 
 @pytest.mark.asyncio
-async def test_restart_command(mock_update, mock_context):
+@patch('agent_zero_telegram_bot.requests.post')
+async def test_restart_command(mock_post, mock_update, mock_context):
+    bot.context_id = "test-session-123"
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_post.return_value = mock_response
+
     test_message = "/restart"
     print(f"\n[TEST] Sending command: '{test_message}'")
     await run_and_await_tasks(bot.restart_command(mock_update, mock_context))
     
+    mock_post.assert_called_once()
+    args, kwargs = mock_post.call_args
+    assert "api_terminate_chat" in args[0]
+    assert kwargs["json"]["context_id"] == "test-session-123"
+
     mock_update.message.reply_text.assert_awaited_once_with(
         "🔄 Session restarted. Ready for a new conversation."
     )
-    args, kwargs = mock_update.message.reply_text.call_args
-    response_text = kwargs.get('text', args[0] if args else '')
-    print(f"\n[TEST] Received response: '{response_text}'")
     assert bot.context_id is None
 
 @pytest.mark.asyncio

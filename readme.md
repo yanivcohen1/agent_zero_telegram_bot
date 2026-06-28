@@ -110,3 +110,8 @@ docker-compose up -d
 ## Agent-Zero website
 You can also manually access the Agent-Zero web UI locally:
 [http://localhost:5000](http://localhost:5000)
+
+9. *send HI Live test*
+    ```bash
+    python agent_zero_telegram_bot.py --test
+    ```
