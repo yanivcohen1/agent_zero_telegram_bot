@@ -90,6 +90,8 @@ docker logs -f agent-zero-isolated
 4. **Rerstart container**
 ```bash
 Container agent-zero-telegram-bot Restarting
+docker restart agent-zero-telegram-bot
+docker restart agent-zero-isolated
 ```
 5. **Stack commands**
 ```bash
