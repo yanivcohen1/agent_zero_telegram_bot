@@ -486,7 +486,7 @@ async def run_test_message():
     if downloaded_images:
         print(f"Downloaded images: {downloaded_images}")
 
-def main():
+async def main():
     # If '--test' is passed, run the test message instead of starting the Telegram bot
     if len(sys.argv) > 1 and sys.argv[1] == "--test":
         # Load test API key if available in process environment, otherwise use what's loaded from .env
@@ -504,12 +504,18 @@ def main():
         logging.error("TELEGRAM_TOKEN or MY_USER_ID environment variables are missing!")
         return
     application = create_app()
+    await application.initialize()
+    # Delete any existing webhook to allow polling
+    await application.bot.delete_webhook(drop_pending_updates=True)
+    logging.info("Webhook cleared, starting polling...")
     logging.info(f"Bot started successfully for authorized user: {MY_ID}")
     logging.info(f"Environment: {ENVIRONMENT}")
     # Start the bot
-    application.run_polling()
+    await application.start()
+    await application.updater.start_polling()
+    # Keep the bot running until stopped
+    await asyncio.Event().wait()
 
 
 if __name__ == "__main__":
-
-    main()
+    asyncio.run(main())
